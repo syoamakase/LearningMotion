@@ -45,8 +45,6 @@ def load_csv(data_dir,data_file_name,num,test=False):
 
 
 
-
-
 # -*- coding: utf-8 -*-
 
 
