@@ -23,7 +23,10 @@ n_units = 250
 
 test_data   = []
 test_target = []
-true_matrix = []
+
+#検索データ([action,subject,take])
+search_data = {"action":10,"subject":4,"take":4}
+i_data =[10,12,26,27]
 
 # csvファイルを読み込む関数
 def load_csv(data_dir,data_file_name,num,test=False):
@@ -39,7 +42,6 @@ def load_csv(data_dir,data_file_name,num,test=False):
                 data.append(np.array(d[1:]).astype(np.float32))
                 target.append([num])
                 data_length = i
-                true_matrix.append(num)
         
     if test:
         test_data.extend(data)
@@ -83,18 +85,15 @@ def evaluate(x_data, t,target=True):
 	return loss.data.astype(np.float32)
 
 
-
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--dir', action='store',dest='data_dir',default='')
-	data_dir = parser.parse_args().data_dir
+	parser.add_argument('--load', action='store',dest='load_filename',default='model.pkl')
 
-	#検索データ([action,subject,take])
-	search_data = {"action":26,"subject":1,"take":1}
-	i_data =[10,12,26,27]
-	mean_matrix   = []
-	max_matrix    = []
-	voting_matrix = []
+	data_dir = parser.parse_args().data_dir
+	load_filename = parser.parse_args().load_filename
+
+	
 	target_data = []
 
 	#元々ファイルがない
@@ -102,44 +101,22 @@ if __name__ == '__main__':
 		pass
 	else:
 		#print eval("'a%d_s%d_t%d_.csv'%(search_data.action,search_data.subject,search_data.take)")
-		test_data   = []
-		test_target = []
 		load_csv(data_dir,eval("'a%d_s%d_t%d_.csv'%(search_data['action'],search_data['subject'],search_data['take'])"),2,test=True)
-
 
 	test_d   = np.array(test_data).astype(np.float32)
 	test_t   = np.array(test_target).astype(np.int32)
 
 	N_test = len(test_data)
 
-
 	#学習済みモデルのロード
-	model = pickle.load(open(data_dir+"model.pkl",'rb'))
-
-	data_output = []
+	model = pickle.load(open(data_dir+load_filename,'rb'))
 
 	state = make_initial_state(batchsize=len(test_data))
 	accum_loss = Variable(np.zeros(()).astype(np.float32)) #明示的にfloat32を指定
-
 	evaluate_loss = evaluate(test_d, test_t,target=True)
-	#print('data length: {}'.format(N_test))
-	print('\ttest loss: {}'.format(evaluate_loss))
-	#result = np.array(data_output).astype(np.float32)
 	data_output_exp = np.exp(target_data)
 	target_result = data_output_exp/data_output_exp.sum(axis=1)
 
-	test_data   = []
-	test_target = []
-	true_matrix = []
-
-
-
-	#テスト用データのロード
-	print "***load test ***"
-
-	mean_matrix   = []
-	max_matrix    = []
-	voting_matrix = []
 	dist_data = []
 	for x,i in enumerate(i_data):
 		for j in xrange(8,9):
@@ -152,13 +129,9 @@ if __name__ == '__main__':
 		        test_target = []
 		        load_csv(data_dir,eval("'a%d_s%d_t%d_.csv'%(i,j,k)"),x,test=True)
 
-
 		        test_d   = np.array(test_data).astype(np.float32)
 		        test_t   = np.array(test_target).astype(np.int32)
-
 		        N_test = len(test_data)
-
-
 		        #学習済みモデルのロード
 		        model = pickle.load(open(data_dir+"model.pkl",'rb'))
 
@@ -168,7 +141,6 @@ if __name__ == '__main__':
 		        def forward_one_step(x_data, y_data, state, train=True,target=True):
 		            x = Variable(x_data, volatile=not train)
 		            t = Variable(y_data.flatten(), volatile=not train)
-		            #print t.data
 		            h0 = model.l0(x)
 		            if target == False:
 		                data = h0.data
@@ -196,27 +168,26 @@ if __name__ == '__main__':
 
 
 		        state = make_initial_state(batchsize=len(test_data))
-		        accum_loss = Variable(np.zeros(()).astype(np.float32)) #明示的にfloat32を指定
-
-		        
+		        accum_loss = Variable(np.zeros(()).astype(np.float32)) #明示的にfloat32を指定		        
 		        evaluate_loss = evaluate(test_d, test_t,target=False)
 		        #print('\ttest loss: {}'.format(evaluate_loss))
 		        data_output_exp = np.exp(data_output)
 		        result = data_output_exp/data_output_exp.sum(axis=1)
-		        
 		        distance = (target_result[0][0:20] - result[0][0:20])**2
 		        dist_data.append(distance.sum())
 
 	d = dist_data[:]
-	print("target: %d"%search_data["action"])
-	for i in range(len(d)): 
+	print '***ranking***'
+	print("target: a%d_s%d_t%d"%(search_data["action"],search_data["subject"],search_data["take"]))
+	for i in range(len(d)):
+		sys.stdout.write("%d: "%(i+1))
 		min = np.argmin(d)
 		if min < 4:
-		    print i_data[0]
-		elif min < 9:
-		    print i_data[1]
-		elif min < 14:
-		    print i_data[2]
+		    print("%d(dist:%f)"%(i_data[0],dist_data[min]))
+		elif min < 8:
+		    print("%d(dist:%f)"%(i_data[1],dist_data[min]))
+		elif min < 12:
+		    print("%d(dist:%f)"%(i_data[2],dist_data[min]))
 		else:
-		    print i_data[3]
+		    print("%d(dist:%f)"%(i_data[3],dist_data[min]))
 		d[min] = float("inf")

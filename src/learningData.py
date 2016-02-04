@@ -52,7 +52,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--dir', action='store',dest='data_dir',default='')
-    parser.add_argument('--save_file', action='store',dest='save_filename',default='model.pkl')
+    parser.add_argument('--save', action='store',dest='save_filename',default='model.pkl')
     data_dir = parser.parse_args().data_dir
     mod = np
 

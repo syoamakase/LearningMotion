@@ -95,8 +95,10 @@ def printscore(true_matrix,max_matrix,voting_matrix,mean_matrix):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--dir', action='store',dest='data_dir',default='')
+    parser.add_argument('--load', action='store',dest='load_filename',default='model.pkl')
 
-    data_dir = parser.parse_args().data_dir
+    data_dir      = parser.parse_args().data_dir
+    load_filename = parser.parse_args().load_filename
     #テスト用データのロード
     print "***load test ***"
     i_data = [10,12,26,27]
@@ -125,7 +127,7 @@ if __name__ == '__main__':
 
 
                 #学習済みモデルのロード
-                model = pickle.load(open(data_dir+"model.pkl",'rb'))
+                model = pickle.load(open(data_dir+load_filename,'rb'))
 
                 data_output = []
                 data_hidden = []
