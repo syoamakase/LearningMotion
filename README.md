@@ -4,7 +4,7 @@ These programs learn motions, evaluate results, rank what datas is nearest in ta
 
 ##Preparation
 
- I use [datas](http://www.utdallas.edu/~kehtar/UTD) in [UTD-MHAD](http://www.utdallas.edu/~kehtar/UTD-MHAD.html) of MAD/Skeleton.zip)
+ I use [datas](http://www.utdallas.edu/~kehtar/UTD-MAD/Skeleton.zip) in [UTD-MHAD](http://www.utdallas.edu/~kehtar/UTD-MHAD.html)
  
 
 #Requirements
