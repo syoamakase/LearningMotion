@@ -5,15 +5,14 @@ These programs learn motions, evaluate results, rank what datas is nearest in ta
 ##Preparation
 
  I use [datas](http://www.utdallas.edu/~kehtar/UTD-MAD/Skeleton.zip) in [UTD-MHAD](http://www.utdallas.edu/~kehtar/UTD-MHAD.html)
- 
 
-#Requirements
+##Installation
 
-- anaconda
+`pip install -r requirements.txt`
 
-- chainer
+if your machine is MAC, create `matplotlibrc` in ~/.matplotlib and wirte below to write graph.
 
-- sklearn0.17
+`backend : TkAgg` 
 
 
 ##Details

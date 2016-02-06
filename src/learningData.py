@@ -233,9 +233,9 @@ if __name__ == '__main__':
         if i % 1000 == 0:
             print('\ttest loss: {}'.format(evaluate_loss))
             
-        #if :
-        #    optimizer.lr /= 1.1
-        #    print('learning rate =', optimizer.lr)
+        if i%1000 == 0:
+            optimizer.lr /= 1.1
+            print('learning rate =', optimizer.lr)
         sys.stdout.flush()
 
     import cPickle

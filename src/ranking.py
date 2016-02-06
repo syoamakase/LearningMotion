@@ -25,7 +25,7 @@ test_data   = []
 test_target = []
 
 #検索データ([action,subject,take])
-search_data = {"action":10,"subject":4,"take":4}
+search_data = {"action":12,"subject":6,"take":4}
 i_data =[10,12,26,27]
 
 # csvファイルを読み込む関数
@@ -183,11 +183,11 @@ if __name__ == '__main__':
 		sys.stdout.write("%d: "%(i+1))
 		min = np.argmin(d)
 		if min < 4:
-		    print("%d(dist:%f)"%(i_data[0],dist_data[min]))
+		    print("a%d_s8_t%d(dist:%f)"%(i_data[min//4],min%4+1,dist_data[min]))
 		elif min < 8:
-		    print("%d(dist:%f)"%(i_data[1],dist_data[min]))
+		    print("a%d_s8_t%d(dist:%f)"%(i_data[min//4],min%4+1,dist_data[min]))
 		elif min < 12:
-		    print("%d(dist:%f)"%(i_data[2],dist_data[min]))
+		    print("a%d_s8_t%d(dist:%f)"%(i_data[min//4],min%4+1,dist_data[min]))
 		else:
-		    print("%d(dist:%f)"%(i_data[3],dist_data[min]))
+		    print("a%d_s8_t%d(dist:%f)"%(i_data[min//4],min%4+1,dist_data[min]))
 		d[min] = float("inf")
