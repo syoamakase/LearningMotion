@@ -8,12 +8,36 @@ import argparse
 import sys
 import time
 import six
-from chainer import cuda, Variable, FunctionSet, optimizers
+import chainer
+from chainer import cuda, Variable, FunctionSet, optimizers,serializers,Chain
 import chainer.functions  as F
 import matplotlib.pyplot as plt
 
 plt.style.use('ggplot')
+mod = np
 
+i_data = [10,12,26,27]
+data_output = []
+data_hidden = []
+data_first  = []
+
+
+#バッチサイズ(60:微妙 20:微妙)
+batchsize = 40
+#中間層(隠れ層)の個数
+n_units = 250
+#n_units = 250
+#batchsize = 40
+#学習回数
+n_epoch = 40
+#n_epoch = 20
+
+#BPTTの長さ
+bprop_len = 1
+#絶対値クリッピングの値
+grad_clip = 1    # gradient norm threshold to clip
+#分類クラス
+classnum = len(i_data)
 
 # csvファイルを読み込む関数
 def load_csv(data_dir,data_file_name,num,test=False):
@@ -32,8 +56,7 @@ def load_csv(data_dir,data_file_name,num,test=False):
                 ##そのままのデータ(座標)を使う処理
                 data.append(np.array(d[1:]).astype(np.float32))
                 target.append([num])
-                
-        
+                        
     if test==False:
         train_data.extend(data)
         train_target.extend(target)
@@ -45,16 +68,69 @@ def load_csv(data_dir,data_file_name,num,test=False):
 
 
 
-# -*- coding: utf-8 -*-
+def make_initial_state(batchsize=batchsize, train=True):
+        return {name: Variable(mod.zeros((batchsize, n_units),
+                                                 dtype=np.float32),
+                                       volatile=not train)
+                for name in ('c1', 'h1')}
+
+
+class MyChain(Chain):
+    def __init__(self):
+        super(MyChain, self).__init__(
+                l0=F.Linear(12, n_units),
+                l1_x=F.Linear(n_units, 4 * n_units),
+                l1_h=F.Linear(n_units, 4 * n_units),
+                #l2_x=F.Linear(n_units, 4 * n_units),
+                #l2_h=F.Linear(n_units, 4 * n_units),
+                l2=F.Linear(n_units,classnum),
+            )
+
+    def __call__(self,x,y,state,train=True,target=True):
+        if train:
+            h = Variable(x.reshape(batchsize,12), volatile=not train)
+        else:
+            h = Variable(x, volatile=not train)
+        
+        t = Variable(y.flatten(), volatile=not train)
+        
+        h0 = model.l0(h)
+        
+        if target == False:
+            data = h0.data
+            data_first.append(data)
+        
+        #h1_in = F.tanh(model.l1_x(h0)) + model.l1_h(state['h1'])
+        h1_in = model.l1_x(h0) + model.l1_h(state['h1'])
+        
+        #使い方に関しては大丈夫(少なくとも表面上は)
+        h1_in = F.dropout(F.tanh(h1_in),train=train)
+        c1, h1 = F.lstm(state['c1'], h1_in)
+        #h2_in = F.dropout(F.tanh(model.l2_x(h1)), train=train) + model.l2_h(state['h2'])
+        #c2, h2 = F.lstm(state['c2'], h2_in)
+        #h3 = F.dropout(F.tanh(model.l2_x(h2)), train=train,ratio=0.0)
+        if target == False:
+            data = h1.data
+            data_hidden.append(data)
+        
+        y = model.l2(h1)
+        if target ==False:
+            data = y.data
+            data_output.append(data)
+        state = {'c1': c1, 'h1': h1}
+        return state, F.softmax_cross_entropy(y,t)
+
+
+
 
 
 if __name__ == '__main__':
-
+    #引数読み取り
     parser = argparse.ArgumentParser()
     parser.add_argument('--dir', action='store',dest='data_dir',default='')
     parser.add_argument('--save', action='store',dest='save_filename',default='model.pkl')
     data_dir = parser.parse_args().data_dir
-    mod = np
+    
 
     train_data   = []
     train_target = []
@@ -63,7 +139,6 @@ if __name__ == '__main__':
 
     print "***load data ***"
     #訓練用データのロード
-    i_data = [10,12,26,27]
     for x,i in enumerate(i_data):
         for j in xrange(1,8):
             for k in xrange(1,5):
@@ -83,22 +158,7 @@ if __name__ == '__main__':
                 print eval("'a%d_s%d_t%d_.csv'%(i,j,k)")
                 load_csv(data_dir,eval("'a%d_s%d_t%d_.csv'%(i,j,k)"),x,test=True)
 
-    #バッチサイズ(60:微妙 20:微妙)
-    batchsize = 40
-    #batchsize = 40
-    #学習回数
-    n_epoch = 80
-    #n_epoch = 20
-    #中間層(隠れ層)の個数
-    n_units = 250
-    #n_units = 250
-
-    #BPTTの長さ
-    bprop_len = 1
-    #絶対値クリッピングの値
-    grad_clip = 1    # gradient norm threshold to clip
-    #分類クラス
-    classnum = len(i_data)
+    state = make_initial_state()
 
     test_d   = np.array(test_data).astype(np.float32)
     test_t   = np.array(test_target).astype(np.int32)
@@ -106,72 +166,22 @@ if __name__ == '__main__':
     #各データの長さ
     N      = len(train_data)
     N_test = len(test_data)
+   
 
-    model = FunctionSet(l0=F.Linear(12, n_units),
-                        l1_x=F.Linear(n_units, 4 * n_units),
-                        l1_h=F.Linear(n_units, 4 * n_units),
-                        #l2_x=F.Linear(n_units, 4 * n_units),
-                        #l2_h=F.Linear(n_units, 4 * n_units),
-                        l2=F.Linear(n_units,classnum))
-
-    for param in model.parameters:
-        param[:] = np.random.uniform(-0.1, 0.1, param.shape)
-
-        
-
-    data_output = []
-    data_hidden = []
-    data_first  = []
-
-
-    def forward_one_step(x_data, y_data, state, train=True,target=True):
-        if train:
-            x = Variable(x_data.reshape(batchsize,12), volatile=not train)
-        else:
-            x = Variable(x_data, volatile=not train)
-        t = Variable(y_data.flatten(), volatile=not train)
-        
-        h0 = model.l0(x)
-        
-        if target == False:
-            data = h0.data
-            data_first.append(data)
-        
-        ##修正点(tanhを消去)--改善が見られた
-        #h1_in = F.tanh(model.l1_x(h0)) + model.l1_h(state['h1'])
-        h1_in = model.l1_x(h0) + model.l1_h(state['h1'])
-        
-        #使い方に関しては大丈夫(少なくとも表面上は)
-        h1_in = F.dropout(F.tanh(h1_in),train=train)
-        c1, h1 = F.lstm(state['c1'], h1_in)
-        #h2_in = F.dropout(F.tanh(model.l2_x(h1)), train=train) + model.l2_h(state['h2'])
-        #c2, h2 = F.lstm(state['c2'], h2_in)
-        #h3 = F.dropout(F.tanh(model.l2_x(h2)), train=train,ratio=0.0)
-        if target == False:
-            data = h1.data
-            data_hidden.append(data)
-        
-        y = model.l2(h1)
-
-        if target ==False:
-            data = y.data
-            data_output.append(data)
-        state = {'c1': c1, 'h1': h1}
-        return state, F.softmax_cross_entropy(y,t)
-
-
-    def make_initial_state(batchsize=batchsize, train=True):
-        return {name: Variable(mod.zeros((batchsize, n_units),
-                                                 dtype=np.float32),
-                                       volatile=not train)
-                for name in ('c1', 'h1')}
+    #モデルの初期化
+    model = MyChain()
+    for param in model.params():
+        data = param.data
+        data[:] = np.random.uniform(-0.1, 0.1, data.shape)
+    model.compute_accuracy = False   
 
     optimizer = optimizers.SGD(lr=1.,)
-    optimizer.setup(model.collect_parameters())
+    optimizer.setup(model)
+    optimizer.add_hook(chainer.optimizer.WeightDecay(0.0001))
 
     def evaluate(x_data, t,target=True):
         state = make_initial_state(batchsize=len(t), train=False)
-        state, loss = forward_one_step(x_data, t, state, train=False,target=target)
+        state, loss = model(x_data, t, state, train=False,target=target)
         return loss.data.astype(np.float32)
 
 
@@ -181,7 +191,7 @@ if __name__ == '__main__':
 
     epoch = 0
 
-    state = make_initial_state()
+    
     accum_loss = Variable(np.zeros(()).astype(np.float32)) #明示的にfloat32を指定
     print('going to train {} iterations'.format(jump * n_epoch))
 
@@ -204,9 +214,9 @@ if __name__ == '__main__':
         
         
         if (i+1) == (jump * n_epoch):
-            state, loss = forward_one_step(x_batch, y_batch, state)
+            state, loss = model(x_batch, y_batch, state)
         else:
-             state, loss = forward_one_step(x_batch, y_batch, state)
+            state, loss = model(x_batch, y_batch, state)
 
         accum_loss.data =  accum_loss.data.astype(np.float32)
         accum_loss += loss
@@ -233,13 +243,12 @@ if __name__ == '__main__':
         if i % 1000 == 0:
             print('\ttest loss: {}'.format(evaluate_loss))
             
-        if i%1000 == 0:
+        if i%3000 == 0:
             optimizer.lr /= 1.1
             print('learning rate =', optimizer.lr)
         sys.stdout.flush()
 
-    import cPickle
-    # CPU環境でも学習済みモデルを読み込めるようにCPUに移してからダンプ
-    model.to_cpu()
-    save_filename = parser.parse_args().save_filename
-    cPickle.dump(model, open(data_dir+save_filename, "wb"), -1)
+    #chainerの方法を変更
+    serializers.save_hdf5('test.model', model)
+    serializers.save_hdf5('test.state', optimizer)
+

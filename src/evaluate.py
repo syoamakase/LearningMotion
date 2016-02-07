@@ -7,7 +7,7 @@ import sys
 import time
 import numpy as np
 import six
-from chainer import cuda, Variable, FunctionSet, optimizers
+from chainer import cuda, Variable, FunctionSet, optimizers, serializers, Chain
 import chainer.functions  as F
 import csv
 import pickle
@@ -91,6 +91,57 @@ def printscore(true_matrix,max_matrix,voting_matrix,mean_matrix):
 
     return
 
+data_output = []
+data_hidden = []
+data_first  = []
+
+class MyChain(Chain):
+    def __init__(self):
+        super(MyChain, self).__init__(
+                l0=F.Linear(12, n_units),
+                l1_x=F.Linear(n_units, 4 * n_units),
+                l1_h=F.Linear(n_units, 4 * n_units),
+                #l2_x=F.Linear(n_units, 4 * n_units),
+                #l2_h=F.Linear(n_units, 4 * n_units),
+                l2=F.Linear(n_units,4),
+            )
+
+    def __call__(self,x,y,state,train=True,target=True):
+        
+        if train:
+            h = Variable(x.reshape(batchsize,12), volatile=not train)
+        else:
+            h = Variable(x, volatile=not train)
+        
+        t = Variable(y.flatten(), volatile=not train)
+        
+        h0 = model.l0(h)
+        
+        if target == False:
+            data = h0.data
+            data_first.append(data)
+        
+        #h1_in = F.tanh(model.l1_x(h0)) + model.l1_h(state['h1'])
+        h1_in = model.l1_x(h0) + model.l1_h(state['h1'])
+        
+        #使い方に関しては大丈夫(少なくとも表面上は)
+        h1_in = F.dropout(F.tanh(h1_in),train=train)
+        c1, h1 = F.lstm(state['c1'], h1_in)
+        #h2_in = F.dropout(F.tanh(model.l2_x(h1)), train=train) + model.l2_h(state['h2'])
+        #c2, h2 = F.lstm(state['c2'], h2_in)
+        #h3 = F.dropout(F.tanh(model.l2_x(h2)), train=train,ratio=0.0)
+        if target == False:
+            data = h1.data
+            data_hidden.append(data)
+        
+        y = model.l2(h1)
+        if target ==False:
+            data = y.data
+            data_output.append(data)
+        state = {'c1': c1, 'h1': h1}
+        return state, F.softmax_cross_entropy(y,t)
+
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -127,37 +178,15 @@ if __name__ == '__main__':
 
 
                 #学習済みモデルのロード
-                model = pickle.load(open(data_dir+load_filename,'rb'))
+                model = MyChain()
+                model.compute_accuracy = False
 
-                data_output = []
-                data_hidden = []
-                data_first  = []
-                def forward_one_step(x_data, y_data, state, train=True,target=True):
-                    x = Variable(x_data, volatile=not train)
-                    t = Variable(y_data.flatten(), volatile=not train)
-                    #print t.data
-                    h0 = model.l0(x)
-                    if target == False:
-                        data = h0.data
-                        data_first.append(data)
-
-                    h1_in = F.tanh(model.l1_x(h0)) + model.l1_h(state['h1'])
-                    c1, h1 = F.lstm(state['c1'], h1_in)
-                    #h2_in = F.dropout(F.tanh(model.l2_x(h1)), train=train) + model.l2_h(state['h2'])
-                    #c2, h2 = F.lstm(state['c2'], h2_in)
-                    #h3 = F.dropout(F.tanh(model.l2_x(h2)), train=train,ratio=0.0)
-                    if target == False:
-                        data = h1.data
-                        data_hidden.append(data)
-        
-                    y = model.l2(h1)
-
-                    if target ==False:
-                        data = y.data
-                        data_output.append(data)
-                    state = {'c1': c1, 'h1': h1}
-                    return state, F.softmax_cross_entropy(y,t)
-
+                optimizer = optimizers.SGD(lr=1.)
+                optimizer.setup(model)
+                #model = pickle.load(open(data_dir+load_filename,'rb'))
+                serializers.load_hdf5('test.model', model)
+                serializers.load_hdf5('test.state',optimizer)
+                
                 def make_initial_state(batchsize=batchsize, train=True):
                     return {name: Variable(mod.zeros((batchsize, n_units),
                                                              dtype=np.float32),
@@ -167,14 +196,14 @@ if __name__ == '__main__':
 
                 def evaluate(x_data, t,target=True):
                     state = make_initial_state(batchsize=len(t), train=False)
-                    state, loss = forward_one_step(x_data, t, state, train=False,target=target)
+                    state, loss = model(x_data, t, state, train=False,target=target)
                     return loss.data.astype(np.float32)
 
 
                 state = make_initial_state(batchsize=len(test_data))
                 accum_loss = Variable(np.zeros(()).astype(np.float32)) #明示的にfloat32を指定
 
-
+                data_output = []
                 evaluate_loss = evaluate(test_d, test_t,target=False)
                 #print('data length: {}'.format(N_test))
                 print('\ttest loss: {}'.format(evaluate_loss))
