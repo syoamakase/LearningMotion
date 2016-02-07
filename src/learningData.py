@@ -128,9 +128,9 @@ if __name__ == '__main__':
     #引数読み取り
     parser = argparse.ArgumentParser()
     parser.add_argument('--dir', action='store',dest='data_dir',default='')
-    parser.add_argument('--save', action='store',dest='save_filename',default='model.pkl')
+    parser.add_argument('--save', action='store',dest='save_filename',default='test')
     data_dir = parser.parse_args().data_dir
-    
+    save_filename = parser.parse_args().save_filename
 
     train_data   = []
     train_target = []
@@ -249,6 +249,6 @@ if __name__ == '__main__':
         sys.stdout.flush()
 
     #chainerの方法を変更
-    serializers.save_hdf5('test.model', model)
-    serializers.save_hdf5('test.state', optimizer)
+    serializers.save_hdf5(save_filename+'.model', model)
+    serializers.save_hdf5(save_filename+'.state', optimizer)
 

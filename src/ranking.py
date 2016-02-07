@@ -31,7 +31,8 @@ data_first  = []
 target_data = []
 
 #検索データ([action,subject,take])
-search_data = {"action":12,"subject":6,"take":3}
+search_data = {"action":12,"subject":1,"take":1}
+subect_name = 8
 i_data =[10,12,26,27]
 
 # csvファイルを読み込む関数
@@ -55,28 +56,6 @@ def load_csv(data_dir,data_file_name,num,test=False):
         
     return
 
-
-def forward_one_step(x_data, y_data, state, train=True,target=True):
-	x = Variable(x_data, volatile=not train)
-	t = Variable(y_data.flatten(), volatile=not train)
-	h0 = model.l0(x)
-
-	h1_in = F.tanh(model.l1_x(h0)) + model.l1_h(state['h1'])
-	c1, h1 = F.lstm(state['c1'], h1_in)
-	#h2_in = F.dropout(F.tanh(model.l2_x(h1)), train=train) + model.l2_h(state['h2'])
-	#c2, h2 = F.lstm(state['c2'], h2_in)
-	#h3 = F.dropout(F.tanh(model.l2_x(h2)), train=train,ratio=0.0)
-
-	y = model.l2(h1)
-
-	if target ==False:
-		data = y.data
-		data_output.append(data)
-	else:
-		data = y.data
-		target_data.append(data)
-	state = {'c1': c1, 'h1': h1}
-	return state, F.softmax_cross_entropy(y,t)
 
 def make_initial_state(batchsize=batchsize, train=True):
 	return {name: Variable(mod.zeros((batchsize, n_units),
@@ -204,18 +183,17 @@ if __name__ == '__main__':
 				dist_data.append(distance.sum())
 
 	d = dist_data[:]
-	print d
 	print '***ranking***'
 	print("target: a%d_s%d_t%d"%(search_data["action"],search_data["subject"],search_data["take"]))
 	for i in range(len(d)):
 		sys.stdout.write("%d: "%(i+1))
 		min = np.argmin(d)
 		if min < 4:
-			print("a%d_s8_t%d(dist:%f)"%(i_data[min//4],min%4+1,dist_data[min]))
+			print("a%d_s%d_t%d(dist:%f)"%(i_data[min//4],subect_name,min%4+1,dist_data[min]))
 		elif min < 8:
-			print("a%d_s8_t%d(dist:%f)"%(i_data[min//4],min%4+1,dist_data[min]))
+			print("a%d_s%d_t%d(dist:%f)"%(i_data[min//4],subect_name,min%4+1,dist_data[min]))
 		elif min < 12:
-			print("a%d_s8_t%d(dist:%f)"%(i_data[min//4],min%4+1,dist_data[min]))
+			print("a%d_s%d_t%d(dist:%f)"%(i_data[min//4],subect_name,min%4+1,dist_data[min]))
 		else:
-			print("a%d_s8_t%d(dist:%f)"%(i_data[min//4],min%4+1,dist_data[min]))
+			print("a%d_s%d_t%d(dist:%f)"%(i_data[min//4],subect_name,min%4+1,dist_data[min]))
 		d[min] = float("inf")
