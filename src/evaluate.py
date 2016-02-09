@@ -17,12 +17,14 @@ import argparse
 from sklearn import metrics
 from sklearn.metrics import accuracy_score, classification_report,hamming_loss,f1_score,roc_curve,confusion_matrix
 
+import mynet
+
 plt.style.use('ggplot')
 
 mod = np
 
-batchsize = 40
-n_units = 250
+batchsize = 120
+n_units = 10
 
 test_data   = []
 test_target = []
@@ -91,9 +93,7 @@ def printscore(true_matrix,max_matrix,voting_matrix,mean_matrix):
 
     return
 
-data_output = []
-data_hidden = []
-data_first  = []
+
 
 class MyChain(Chain):
     def __init__(self):
@@ -103,11 +103,11 @@ class MyChain(Chain):
                 l1_h=F.Linear(n_units, 4 * n_units),
                 #l2_x=F.Linear(n_units, 4 * n_units),
                 #l2_h=F.Linear(n_units, 4 * n_units),
-                l2=F.Linear(n_units,4),
+                l2=F.Linear(n_units,7),
             )
 
     def __call__(self,x,y,state,train=True,target=True):
-        
+
         if train:
             h = Variable(x.reshape(batchsize,12), volatile=not train)
         else:
@@ -146,13 +146,14 @@ class MyChain(Chain):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--dir', action='store',dest='data_dir',default='')
-    parser.add_argument('--load', action='store',dest='load_filename',default='model.pkl')
+    parser.add_argument('--load', action='store',dest='load_filename',default='test')
 
     data_dir      = parser.parse_args().data_dir
     load_filename = parser.parse_args().load_filename
     #テスト用データのロード
     print "***load test ***"
-    i_data = [10,12,26,27]
+    
+    i_data = [10,12,21,26,27]
 
     mean_matrix   = []
     max_matrix    = []
@@ -162,7 +163,7 @@ if __name__ == '__main__':
         for j in xrange(8,9):
             for k in xrange(1,5):
                 #元々ファイルがない
-                if i == 27 and j == 8 and k == 4:
+                if (i == 27 and j == 8 and k == 4) or (i==23 and j==6 and k==4):
                     continue
                 print eval("'a%d_s%d_t%d_.csv'%(i,j,k)")
                 #print x
@@ -178,14 +179,14 @@ if __name__ == '__main__':
 
 
                 #学習済みモデルのロード
-                model = MyChain()
+                model = mynet.MyChain()
                 model.compute_accuracy = False
 
                 optimizer = optimizers.SGD(lr=1.)
                 optimizer.setup(model)
                 #model = pickle.load(open(data_dir+load_filename,'rb'))
-                serializers.load_hdf5('test.model', model)
-                serializers.load_hdf5('test.state',optimizer)
+                serializers.load_hdf5(load_filename+'.model', model)
+                serializers.load_hdf5(load_filename+'.state',optimizer)
                 
                 def make_initial_state(batchsize=batchsize, train=True):
                     return {name: Variable(mod.zeros((batchsize, n_units),
@@ -203,20 +204,20 @@ if __name__ == '__main__':
                 state = make_initial_state(batchsize=len(test_data))
                 accum_loss = Variable(np.zeros(()).astype(np.float32)) #明示的にfloat32を指定
 
-                data_output = []
+                model.data_output = []
                 evaluate_loss = evaluate(test_d, test_t,target=False)
                 #print('data length: {}'.format(N_test))
                 print('\ttest loss: {}'.format(evaluate_loss))
                 #result = np.array(data_output).astype(np.float32)
-                data_output_exp = np.exp(data_output)
+                data_output_exp = np.exp(model.data_output)
                 result = data_output_exp/data_output_exp.sum(axis=1)
                 #print result
                 mean_top = result.mean(axis=1).argmax()
                 max_top  = result.max(axis=1).argmax()
                 mean_matrix.append(mean_top)
                 max_matrix.append(max_top)
-                result = np.array(data_output).astype(np.float32)
-                arr = np.zeros(5).astype(np.int32)
+                result = np.array(model.data_output).astype(np.float32)
+                arr = np.zeros(len(i_data)).astype(np.int32)
                 count = 0
                 for d in result[0]:
                     arr[d.argmax()] +=1 

@@ -33,7 +33,7 @@ target_data = []
 #検索データ([action,subject,take])
 search_data = {"action":12,"subject":1,"take":1}
 subect_name = 8
-i_data =[10,12,26,27]
+i_data = [10,12,20,21,22,23,24,25,26,27]
 
 # csvファイルを読み込む関数
 def load_csv(data_dir,data_file_name,num,test=False):
@@ -73,7 +73,7 @@ class MyChain(Chain):
                 l1_h=F.Linear(n_units, 4 * n_units),
                 #l2_x=F.Linear(n_units, 4 * n_units),
                 #l2_h=F.Linear(n_units, 4 * n_units),
-                l2=F.Linear(n_units,4),
+                l2=F.Linear(n_units,10),
             )
 
     def __call__(self,x,y,state,train=True,target=True):
