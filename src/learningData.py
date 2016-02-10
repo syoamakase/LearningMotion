@@ -28,13 +28,13 @@ data_first  = []
 
 
 #バッチサイズ(60:微妙 20:微妙)
-batchsize = 60
+batchsize = 40
 #中間層(隠れ層)の個数
-n_units = 10
+n_units = 250
 #n_units = 250
 #batchsize = 40
 #学習回数
-n_epoch = 20
+n_epoch = 40
 #n_epoch = 20
 
 #BPTTの長さ
@@ -126,7 +126,7 @@ if __name__ == '__main__':
 
     #モデルの初期化
 
-    model = mynet.MyChain()
+    model = mynet.MyChain(n_units,classnum)
     for param in model.params():
         data = param.data
         data[:] = np.random.uniform(-0.1, 0.1, data.shape)

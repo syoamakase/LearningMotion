@@ -24,12 +24,14 @@ plt.style.use('ggplot')
 mod = np
 
 batchsize = 120
-n_units = 10
+n_units   = 250
+i_data    = [10,12,21,26,27]
+classnum  = len(i_data) 
+
 
 test_data   = []
 test_target = []
 true_matrix = []
-
 
 # csvファイルを読み込む関数
 def load_csv(data_dir,data_file_name,num,test=False):
@@ -95,54 +97,6 @@ def printscore(true_matrix,max_matrix,voting_matrix,mean_matrix):
 
 
 
-class MyChain(Chain):
-    def __init__(self):
-        super(MyChain, self).__init__(
-                l0=F.Linear(12, n_units),
-                l1_x=F.Linear(n_units, 4 * n_units),
-                l1_h=F.Linear(n_units, 4 * n_units),
-                #l2_x=F.Linear(n_units, 4 * n_units),
-                #l2_h=F.Linear(n_units, 4 * n_units),
-                l2=F.Linear(n_units,7),
-            )
-
-    def __call__(self,x,y,state,train=True,target=True):
-
-        if train:
-            h = Variable(x.reshape(batchsize,12), volatile=not train)
-        else:
-            h = Variable(x, volatile=not train)
-        
-        t = Variable(y.flatten(), volatile=not train)
-        
-        h0 = model.l0(h)
-        
-        if target == False:
-            data = h0.data
-            data_first.append(data)
-        
-        #h1_in = F.tanh(model.l1_x(h0)) + model.l1_h(state['h1'])
-        h1_in = model.l1_x(h0) + model.l1_h(state['h1'])
-        
-        #使い方に関しては大丈夫(少なくとも表面上は)
-        h1_in = F.dropout(F.tanh(h1_in),train=train)
-        c1, h1 = F.lstm(state['c1'], h1_in)
-        #h2_in = F.dropout(F.tanh(model.l2_x(h1)), train=train) + model.l2_h(state['h2'])
-        #c2, h2 = F.lstm(state['c2'], h2_in)
-        #h3 = F.dropout(F.tanh(model.l2_x(h2)), train=train,ratio=0.0)
-        if target == False:
-            data = h1.data
-            data_hidden.append(data)
-        
-        y = model.l2(h1)
-        if target ==False:
-            data = y.data
-            data_output.append(data)
-        state = {'c1': c1, 'h1': h1}
-        return state, F.softmax_cross_entropy(y,t)
-
-
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--dir', action='store',dest='data_dir',default='')
@@ -153,8 +107,7 @@ if __name__ == '__main__':
     #テスト用データのロード
     print "***load test ***"
     
-    i_data = [10,12,21,26,27]
-
+    
     mean_matrix   = []
     max_matrix    = []
     voting_matrix = []
@@ -179,7 +132,7 @@ if __name__ == '__main__':
 
 
                 #学習済みモデルのロード
-                model = mynet.MyChain()
+                model = mynet.MyChain(n_units,classnum)
                 model.compute_accuracy = False
 
                 optimizer = optimizers.SGD(lr=1.)

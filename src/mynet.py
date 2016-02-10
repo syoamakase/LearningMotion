@@ -3,17 +3,14 @@
 from chainer import cuda, Variable, FunctionSet, optimizers, serializers, Chain
 import chainer.functions  as F
 
-
-n_units   = 10
-classnum  = 5
-batchsize = 60
+batchsize = 40
 
 
 class MyChain(Chain):
     data_output = []
     data_hidden = []
     data_first  = []
-    def __init__(self):
+    def __init__(self,n_units,classnum):
         super(MyChain, self).__init__(
                 l0=F.Linear(12, n_units),
                 l1_x=F.Linear(n_units, 4 * n_units),
@@ -22,7 +19,9 @@ class MyChain(Chain):
                 #l2_h=F.Linear(n_units, 4 * n_units),
                 l2=F.Linear(n_units,classnum),
             )
-        
+        #self.n_units  = n_units
+        #self.classnum = classnum
+                
 
     def __call__(self,x,y,state,train=True,target=True):
         if train:
