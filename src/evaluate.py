@@ -18,6 +18,7 @@ from sklearn import metrics
 from sklearn.metrics import accuracy_score, classification_report,hamming_loss,f1_score,roc_curve,confusion_matrix
 
 import mynet
+import mynet_not_lstm
 
 plt.style.use('ggplot')
 
@@ -25,7 +26,8 @@ mod = np
 
 batchsize = 120
 n_units   = 250
-i_data    = [10,12,21,26,27]
+#i_data = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27]
+i_data = [10,12,22,23,26,27]
 classnum  = len(i_data) 
 
 
@@ -113,10 +115,10 @@ if __name__ == '__main__':
     voting_matrix = []
 
     for x,i in enumerate(i_data):
-        for j in xrange(8,9):
+        for j in xrange(1,8):
             for k in xrange(1,5):
                 #元々ファイルがない
-                if (i == 27 and j == 8 and k == 4) or (i==23 and j==6 and k==4):
+                if (i == 23 and j == 6 and k == 4) or (i==8 and j == 1 and k==4) or (i == 27 and j == 8 and k == 4):
                     continue
                 print eval("'a%d_s%d_t%d_.csv'%(i,j,k)")
                 #print x
@@ -132,9 +134,10 @@ if __name__ == '__main__':
 
 
                 #学習済みモデルのロード
-                model = mynet.MyChain(n_units,classnum)
+                model = mynet_not_lstm.MyChain(n_units,classnum,batchsize)
                 model.compute_accuracy = False
 
+                #optimizer = optimizers.AdaGrad()
                 optimizer = optimizers.SGD(lr=1.)
                 optimizer.setup(model)
                 #model = pickle.load(open(data_dir+load_filename,'rb'))
@@ -145,7 +148,7 @@ if __name__ == '__main__':
                     return {name: Variable(mod.zeros((batchsize, n_units),
                                                              dtype=np.float32),
                                                    volatile=not train)
-                            for name in ('c1', 'h1')}
+                            for name in ('c1', 'h1','c2','h2')}
 
 
                 def evaluate(x_data, t,target=True):

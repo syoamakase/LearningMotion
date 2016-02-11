@@ -17,24 +17,30 @@ import matplotlib.pyplot as plt
 
 
 import mynet
+import mynet_not_lstm
 
 plt.style.use('ggplot')
 mod = np
 
-i_data = [10,12,21,26,27]
+#i_data = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27]
+#i_data = [col for col in xrange(1,28)]
+i_data = [10,12,22,23,26,27]
 data_output = []
 data_hidden = []
 data_first  = []
 
+LSTM_flag = True
 
 #バッチサイズ(60:微妙 20:微妙)
-batchsize = 40
+#batchsize = 540
 #中間層(隠れ層)の個数
-n_units = 250
+#n_units = 450
 #n_units = 250
+batchsize = 120
+n_units   = 250
 #batchsize = 40
 #学習回数
-n_epoch = 40
+n_epoch = 50
 #n_epoch = 20
 
 #BPTTの長さ
@@ -77,7 +83,7 @@ def make_initial_state(batchsize=batchsize, train=True):
         return {name: Variable(mod.zeros((batchsize, n_units),
                                                  dtype=np.float32),
                                        volatile=not train)
-                for name in ('c1', 'h1')}
+                for name in ('c1', 'h1','c2','h2')}
 
 
 if __name__ == '__main__':
@@ -85,6 +91,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--dir', action='store',dest='data_dir',default='')
     parser.add_argument('--save', action='store',dest='save_filename',default='test')
+    parser.add_argument('--gpu' ,'-g',default=01,type=int,help='GPU ID (negative value indicates CPU)')
     data_dir = parser.parse_args().data_dir
     save_filename = parser.parse_args().save_filename
 
@@ -99,7 +106,7 @@ if __name__ == '__main__':
         for j in xrange(1,8):
             for k in xrange(1,5):
                 #元々ファイルがない
-                if (i == 27 and j == 8 and k == 4) or (i==23 and j==6 and k==4):
+                if (i == 23 and j == 6 and k == 4) or (i==8 and j == 1 and k==4) or (i == 27 and j == 8 and k == 4):
                     pass
                 else:
                     #print eval("'a%d_s%d_t%d_.csv'%(i,j,k)")
@@ -126,13 +133,14 @@ if __name__ == '__main__':
 
     #モデルの初期化
 
-    model = mynet.MyChain(n_units,classnum)
+    model = mynet_not_lstm.MyChain(n_units,classnum,batchsize)
     for param in model.params():
         data = param.data
         data[:] = np.random.uniform(-0.1, 0.1, data.shape)
     model.compute_accuracy = False   
 
-    optimizer = optimizers.SGD(lr=1.,)
+    optimizer = optimizers.AdaGrad()
+    #optimizer  = optimizers.SGD(lr=1.)
     optimizer.setup(model)
     optimizer.add_hook(chainer.optimizer.WeightDecay(0.0001))
 
@@ -200,9 +208,15 @@ if __name__ == '__main__':
         if i % 1000 == 0:
             print('\ttest loss: {}'.format(evaluate_loss))
             
-        #if i%3000 == 0:
-        #    optimizer.lr /= 1.1
-        #    print('learning rate =', optimizer.lr)
+        #if i == 5000:
+        #    print "opt SGD" 
+        #    optimizer = optimizers.SGD(lr=0.8)
+        #    optimizer.setup(model)
+            
+        #if i == 6000:
+        #    print "opt AdaGrad"
+        #    optimizer = optimizers.AdaGrad()
+        #    optimizer.setup(model)
         sys.stdout.flush()
 
     #chainerの方法を変更
