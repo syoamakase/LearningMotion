@@ -21,10 +21,10 @@ plt.style.use('ggplot')
 
 mod = np
 
-#batchsize = 540
-#n_units = 500
-batchsize = 120
-n_units   = 250
+batchsize = 540
+n_units = 1200
+#batchsize = 120
+#n_units   = 250
 
 test_data   = []
 test_target = []
@@ -38,8 +38,8 @@ target_data = []
 #検索データ([action,subject,take])
 search_data = {"action":7,"subject":5,"take":3}
 subect_name = 8
-#i_data = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27]
-i_data = [10,12,22,23,26,27]
+i_data = [col for col in xrange(1,28)]
+#i_data = [10,12,22,23,26,27]
 classnum = len(i_data)
 
 # csvファイルを読み込む関数

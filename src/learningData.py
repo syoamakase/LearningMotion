@@ -29,18 +29,12 @@ data_output = []
 data_hidden = []
 data_first  = []
 
-LSTM_flag = True
-
 #バッチサイズ(60:微妙 20:微妙)
-#batchsize = 540
-#中間層(隠れ層)の個数
-#n_units = 450
-#n_units = 250
 batchsize = 120
-n_units   = 250
-#batchsize = 40
+#中間層(隠れ層)の個数
+n_units = 120
 #学習回数
-n_epoch = 50
+n_epoch = 70
 #n_epoch = 20
 
 #BPTTの長さ
@@ -139,7 +133,7 @@ if __name__ == '__main__':
         data[:] = np.random.uniform(-0.1, 0.1, data.shape)
     model.compute_accuracy = False   
 
-    optimizer = optimizers.AdaGrad()
+    optimizer = optimizers.RMSprop()
     #optimizer  = optimizers.SGD(lr=1.)
     optimizer.setup(model)
     optimizer.add_hook(chainer.optimizer.WeightDecay(0.0001))

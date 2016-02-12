@@ -1,8 +1,8 @@
 #-*-coding: utf-8 -*-
 
 from chainer import cuda, Variable, FunctionSet, optimizers, serializers, Chain
-import chainer.functions  as F
-
+import chainer.links as L
+import chainer.functions as F
 
 
 class MyChain(Chain):
@@ -11,10 +11,10 @@ class MyChain(Chain):
     data_first  = []
     def __init__(self,n_units,classnum,batchsize):
         super(MyChain, self).__init__(
-                l0=F.Linear(12, n_units),
-                l1=F.Linear(n_units, n_units),
-                l2=F.Linear(n_units,n_units),
-                l3=F.Linear(n_units,classnum),
+                l0=L.Linear(12, n_units),
+                l1=L.Linear(n_units, n_units),
+                l2=L.Linear(n_units,n_units),
+                l3=L.Linear(n_units,classnum),
             )
         self.batchsize = batchsize
         #self.n_units  = n_units

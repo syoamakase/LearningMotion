@@ -24,10 +24,10 @@ plt.style.use('ggplot')
 
 mod = np
 
-batchsize = 120
-n_units   = 250
-#i_data = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27]
-i_data = [10,12,22,23,26,27]
+batchsize = 540
+n_units   = 1200
+i_data = [col for col in xrange(1,28)]
+#i_data = [10,12,22,23,26,27]
 classnum  = len(i_data) 
 
 
@@ -137,8 +137,8 @@ if __name__ == '__main__':
                 model = mynet_not_lstm.MyChain(n_units,classnum,batchsize)
                 model.compute_accuracy = False
 
-                #optimizer = optimizers.AdaGrad()
-                optimizer = optimizers.SGD(lr=1.)
+                optimizer = optimizers.RMSprop()
+                #optimizer = optimizers.SGD(lr=1.)
                 optimizer.setup(model)
                 #model = pickle.load(open(data_dir+load_filename,'rb'))
                 serializers.load_hdf5(load_filename+'.model', model)
