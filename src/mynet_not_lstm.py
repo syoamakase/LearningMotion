@@ -17,9 +17,6 @@ class MyChain(Chain):
                 l3=L.Linear(n_units,classnum),
             )
         self.batchsize = batchsize
-        #self.n_units  = n_units
-        #self.classnum = classnum
-                
 
     def __call__(self,x,y,state,train=True,target=True):
         if train:

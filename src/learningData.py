@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 import numpy as np
 import csv
 import argparse
@@ -13,9 +11,9 @@ import chainer.functions  as F
 import chainer.links as L
 import matplotlib.pyplot as plt
 
-
 import mynet
 import mynet_not_lstm
+import mynet_cnn
 
 plt.style.use('ggplot')
 mod = np
@@ -94,11 +92,11 @@ if __name__ == '__main__':
     N      = len(train_data)
     N_test = len(test_data)
    
-    model = mynet_not_lstm.MyChain(n_units,classnum,batchsize)
+    model = mynet_cnn.MyChain(n_units,classnum,batchsize)
     for param in model.params():
         data = param.data
         data[:] = np.random.uniform(-0.1, 0.1, data.shape)
-    model.compute_accuracy = False   
+    model.compute_accuracy = False
 
     optimizer = optimizers.RMSprop()
     optimizer.setup(model)
@@ -108,7 +106,6 @@ if __name__ == '__main__':
         state = make_initial_state(batchsize=len(t), train=False)
         state, loss = model(x_data, t, state, train=False,target=target)
         return loss.data.astype(np.float32)
-
 
     whole_len = len(train_data)
     jump = whole_len // batchsize
@@ -130,11 +127,8 @@ if __name__ == '__main__':
                         for j in six.moves.range(batchsize)]).astype(np.float32)
         y_batch = np.array([train_target[(jump * j + i+1) % whole_len]
                         for j in six.moves.range(batchsize)]).astype(np.int32)
-        
-        if (i+1) == (jump * n_epoch):
-            state, loss = model(x_batch, y_batch, state)
-        else:
-            state, loss = model(x_batch, y_batch, state)
+
+        state, loss = model(x_batch, y_batch, state)
 
         accum_loss.data =  accum_loss.data.astype(np.float32)
         accum_loss += loss
