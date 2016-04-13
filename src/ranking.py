@@ -23,8 +23,6 @@ mod = np
 
 batchsize = 540
 n_units = 1200
-#batchsize = 120
-#n_units   = 250
 
 test_data   = []
 test_target = []

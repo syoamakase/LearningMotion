@@ -17,6 +17,7 @@ from sklearn.metrics import accuracy_score, classification_report,hamming_loss,f
 
 import mynet
 import mynet_not_lstm
+import mynet_cnn
 
 plt.style.use('ggplot')
 
@@ -115,7 +116,7 @@ if __name__ == '__main__':
 
                 N_test = len(test_data)
 
-                model = mynet_not_lstm.MyChain(n_units,classnum,batchsize)
+                model = mynet_cnn.MyChain(n_units,classnum,batchsize)
                 model.compute_accuracy = False
 
                 optimizer = optimizers.RMSprop()
