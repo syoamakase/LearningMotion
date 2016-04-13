@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-#-*-coding:utf-8 -*- 
-##データをロードする
 
 import numpy as np
 import csv
@@ -22,35 +20,24 @@ import mynet_not_lstm
 plt.style.use('ggplot')
 mod = np
 
-#i_data = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27]
-#i_data = [col for col in xrange(1,28)]
 i_data = [10,11,12,26,27]
 data_output = []
 data_hidden = []
 data_first  = []
 
-#バッチサイズ(60:微妙 20:微妙)
 batchsize = 120
-#中間層(隠れ層)の個数
 n_units = 120
-#学習回数
 n_epoch = 70
-#n_epoch = 20
 
-#BPTTの長さ
 bprop_len = 1
-#絶対値クリッピングの値
-grad_clip = 1    # gradient norm threshold to clip
-#分類クラス
+grad_clip = 1
 classnum = len(i_data)
 
-# csvファイルを読み込む関数
 def load_csv(data_dir,data_file_name,num,test=False):
     data = []
     target = []
     with open(data_dir+"/"+data_file_name,"rU") as f:
         data_file = csv.reader(f,delimiter=",")
-        data_length = 0
         for i, d in enumerate(data_file):
             data.append(np.array(d[1:]).astype(np.float32))
             target.append([num])
@@ -70,7 +57,6 @@ def make_initial_state(batchsize=batchsize, train=True):
                 for name in ('c1', 'h1','c2','h2')}
 
 if __name__ == '__main__':
-    #引数読み取り
     parser = argparse.ArgumentParser()
     parser.add_argument('--dir', action='store',dest='data_dir',default='')
     parser.add_argument('--save', action='store',dest='save_filename',default='test')
@@ -84,18 +70,14 @@ if __name__ == '__main__':
     test_target  = []
 
     print "***load data ***"
-    #訓練用データのロード
     for x,i in enumerate(i_data):
         for j in xrange(1,8):
             for k in xrange(1,5):
-                #元々ファイルがない
+                # files not exist
                 if (i == 23 and j == 6 and k == 4) or (i==8 and j == 1 and k==4) or (i == 27 and j == 8 and k == 4):
                     pass
                 else:
-                    #print eval("'a%d_s%d_t%d_.csv'%(i,j,k)")
                     load_csv(data_dir,eval("'a%d_s%d_t%d_.csv'%(i,j,k)"),x)
-
-    #テスト用データのロード
 
     print "***load test ***"
     for x,i in enumerate(i_data):
@@ -109,12 +91,9 @@ if __name__ == '__main__':
     test_d   = np.array(test_data).astype(np.float32)
     test_t   = np.array(test_target).astype(np.int32)
 
-    #各データの長さ
     N      = len(train_data)
     N_test = len(test_data)
    
-
-    #モデルの初期化
     model = mynet_not_lstm.MyChain(n_units,classnum,batchsize)
     for param in model.params():
         data = param.data
@@ -122,7 +101,6 @@ if __name__ == '__main__':
     model.compute_accuracy = False   
 
     optimizer = optimizers.RMSprop()
-    #optimizer  = optimizers.SGD(lr=1.)
     optimizer.setup(model)
     optimizer.add_hook(chainer.optimizer.WeightDecay(0.0001))
 
@@ -137,9 +115,8 @@ if __name__ == '__main__':
     print "jump = {}".format(whole_len)
 
     epoch = 0
-
     
-    accum_loss = Variable(np.zeros(()).astype(np.float32)) #明示的にfloat32を指定
+    accum_loss = Variable(np.zeros(()).astype(np.float32))
     print('going to train {} iterations'.format(jump * n_epoch))
 
     train_loss = []
@@ -148,17 +125,12 @@ if __name__ == '__main__':
     test_acc = []
 
     # Learning loop
-    for i in xrange(jump * n_epoch):
-        # training
-        
+    for i in xrange(jump * n_epoch):        
         x_batch = np.array([train_data[(jump * j+i) % whole_len]
                         for j in six.moves.range(batchsize)]).astype(np.float32)
-
-           
         y_batch = np.array([train_target[(jump * j + i+1) % whole_len]
                         for j in six.moves.range(batchsize)]).astype(np.int32)
         
-            
         if (i+1) == (jump * n_epoch):
             state, loss = model(x_batch, y_batch, state)
         else:
@@ -166,12 +138,11 @@ if __name__ == '__main__':
 
         accum_loss.data =  accum_loss.data.astype(np.float32)
         accum_loss += loss
-        if i %1000 ==0:
+
+        if i % 1000 ==0:
             print('epoch = {} \n\ttrain loss: {}'.format(i,accum_loss.data))
 
         if (i + 1) % bprop_len == 0:
-            #optimizer.update(model,x_batch,y_batch,state)
-
             optimizer.zero_grads()
             accum_loss.backward()
             accum_loss.unchain_backward()  # truncate
@@ -179,10 +150,8 @@ if __name__ == '__main__':
             optimizer.clip_grads(grad_clip)
             optimizer.update()
 
-        #テスト
         epoch += 1
             
-            #print('loss')
         if (i+1) % (jump*n_epoch) == 0:
             evaluate_loss = evaluate(test_d, test_t,target=False)
         else:
@@ -190,18 +159,8 @@ if __name__ == '__main__':
         if i % 1000 == 0:
             print('\ttest loss: {}'.format(evaluate_loss))
             
-        #if i == 5000:
-        #    print "opt SGD" 
-        #    optimizer = optimizers.SGD(lr=0.8)
-        #    optimizer.setup(model)
-            
-        #if i == 6000:
-        #    print "opt AdaGrad"
-        #    optimizer = optimizers.AdaGrad()
-        #    optimizer.setup(model)
         sys.stdout.flush()
 
-    #chainerの方法を変更
     serializers.save_hdf5(save_filename+'.model', model)
     serializers.save_hdf5(save_filename+'.state', optimizer)
 
