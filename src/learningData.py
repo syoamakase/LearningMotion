@@ -18,7 +18,7 @@ import mynet_cnn
 plt.style.use('ggplot')
 mod = np
 
-i_data = [10,11,12,26,27]
+i_data = [col for col in xrange(1,28)]
 data_output = []
 data_hidden = []
 data_first  = []
