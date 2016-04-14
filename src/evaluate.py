@@ -1,7 +1,5 @@
 #!/usr/bin/env python
-#-*-coding:utf-8 -*- 
 
-# 必要モジュールのインポート
 import argparse
 import sys
 import time
@@ -19,38 +17,29 @@ from sklearn.metrics import accuracy_score, classification_report,hamming_loss,f
 
 import mynet
 import mynet_not_lstm
+import mynet_cnn
 
 plt.style.use('ggplot')
 
 mod = np
 
 batchsize = 540
-n_units   = 1200
-i_data = [col for col in xrange(1,28)]
-#i_data = [10,12,22,23,26,27]
+n_units   = 120
+i_data = [10,11,12,26,27]
 classnum  = len(i_data) 
-
 
 test_data   = []
 test_target = []
 true_matrix = []
 
-# csvファイルを読み込む関数
 def load_csv(data_dir,data_file_name,num,test=False):
     data = []
     target = []
-    with open(data_dir+data_file_name,"rU") as f:
+    with open(data_dir+"/"+data_file_name,"rU") as f:
         data_file = csv.reader(f,delimiter=",")
-        data_length = 0
         for i, d in enumerate(data_file):
-            if i == 0:
-                prev_data = np.array(d).astype(np.float32)
-            else:
-                #data.append(np.array(d[1:]).astype(np.float32)-prev_data[1:])
-                #prev_data= np.array(d).astype(np.float32)
-                data.append(np.array(d[1:]).astype(np.float32))
-                target.append([num])
-                data_length = i
+            data.append(np.array(d[1:]).astype(np.float32))
+            target.append([num])
         
     if test:
         test_data.extend(data)
@@ -106,10 +95,8 @@ if __name__ == '__main__':
 
     data_dir      = parser.parse_args().data_dir
     load_filename = parser.parse_args().load_filename
-    #テスト用データのロード
     print "***load test ***"
-    
-    
+
     mean_matrix   = []
     max_matrix    = []
     voting_matrix = []
@@ -117,30 +104,23 @@ if __name__ == '__main__':
     for x,i in enumerate(i_data):
         for j in xrange(1,8):
             for k in xrange(1,5):
-                #元々ファイルがない
                 if (i == 23 and j == 6 and k == 4) or (i==8 and j == 1 and k==4) or (i == 27 and j == 8 and k == 4):
                     continue
                 print eval("'a%d_s%d_t%d_.csv'%(i,j,k)")
-                #print x
                 test_data   = []
                 test_target = []
                 load_csv(data_dir,eval("'a%d_s%d_t%d_.csv'%(i,j,k)"),x,test=True)
-
 
                 test_d   = np.array(test_data).astype(np.float32)
                 test_t   = np.array(test_target).astype(np.int32)
 
                 N_test = len(test_data)
 
-
-                #学習済みモデルのロード
-                model = mynet_not_lstm.MyChain(n_units,classnum,batchsize)
+                model = mynet_cnn.MyChain(n_units,classnum,batchsize)
                 model.compute_accuracy = False
 
                 optimizer = optimizers.RMSprop()
-                #optimizer = optimizers.SGD(lr=1.)
                 optimizer.setup(model)
-                #model = pickle.load(open(data_dir+load_filename,'rb'))
                 serializers.load_hdf5(load_filename+'.model', model)
                 serializers.load_hdf5(load_filename+'.state',optimizer)
                 
@@ -150,28 +130,25 @@ if __name__ == '__main__':
                                                    volatile=not train)
                             for name in ('c1', 'h1','c2','h2')}
 
-
                 def evaluate(x_data, t,target=True):
                     state = make_initial_state(batchsize=len(t), train=False)
                     state, loss = model(x_data, t, state, train=False,target=target)
                     return loss.data.astype(np.float32)
 
-
                 state = make_initial_state(batchsize=len(test_data))
-                accum_loss = Variable(np.zeros(()).astype(np.float32)) #明示的にfloat32を指定
+                accum_loss = Variable(np.zeros(()).astype(np.float32))
 
                 model.data_output = []
                 evaluate_loss = evaluate(test_d, test_t,target=False)
-                #print('data length: {}'.format(N_test))
                 print('\ttest loss: {}'.format(evaluate_loss))
-                #result = np.array(data_output).astype(np.float32)
+
                 data_output_exp = np.exp(model.data_output)
                 result = data_output_exp/data_output_exp.sum(axis=1)
-                #print result
                 mean_top = result.mean(axis=1).argmax()
                 max_top  = result.max(axis=1).argmax()
                 mean_matrix.append(mean_top)
                 max_matrix.append(max_top)
+
                 result = np.array(model.data_output).astype(np.float32)
                 arr = np.zeros(len(i_data)).astype(np.int32)
                 count = 0
