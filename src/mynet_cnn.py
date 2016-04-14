@@ -8,10 +8,10 @@ class MyChain(Chain):
     data_first  = []
     def __init__(self,n_units,classnum,batchsize):
         super(MyChain, self).__init__(
-                conv1=F.Convolution2D(1, 10, 2, stride=1, pad=1),
-                conv2=F.Convolution2D(10, 30, 2, stride=1, pad=1),
-                l1=F.Linear(2*2*30, n_units),
-                l2=F.Linear(n_units, classnum),
+                conv1=L.Convolution2D(1, 10, 2, stride=1, pad=1),
+                conv2=L.Convolution2D(10, 30, 2, stride=1, pad=1),
+                l1=L.Linear(2*2*30, n_units),
+                l2=L.Linear(n_units, classnum),
             )
         self.batchsize = batchsize
 

@@ -16,13 +16,14 @@ import matplotlib.pyplot as plt
 
 import mynet
 import mynet_not_lstm
+import mynet_cnn
 
 plt.style.use('ggplot')
 
 mod = np
 
 batchsize = 540
-n_units = 1200
+n_units = 120
 
 test_data   = []
 test_target = []
@@ -37,14 +38,13 @@ target_data = []
 search_data = {"action":7,"subject":5,"take":3}
 subect_name = 8
 i_data = [col for col in xrange(1,28)]
-#i_data = [10,12,22,23,26,27]
 classnum = len(i_data)
 
 # csvファイルを読み込む関数
 def load_csv(data_dir,data_file_name,num,test=False):
     data = []
     target = []
-    with open(data_dir+data_file_name,"rU") as f:
+    with open(data_dir+"/"+data_file_name,"rU") as f:
         data_file = csv.reader(f,delimiter=",")
         data_length = 0
         for i, d in enumerate(data_file):
@@ -90,13 +90,13 @@ if __name__ == '__main__':
 	test_t   = np.array(test_target).astype(np.int32)
 
 	N_test = len(test_data)
-	model = mynet_not_lstm.MyChain(n_units,classnum,batchsize)
+	model = mynet_cnn.MyChain(n_units,classnum,batchsize)
 	model.compute_accuracy = False
 	optimizer = optimizers.SGD(lr=1.)
 	#optimizer  = optimizers.AdaGrad()
 	optimizer.setup(model)
-	serializers.load_hdf5('test.model',model)
-	serializers.load_hdf5('test.state',optimizer)
+	serializers.load_hdf5('sample.model',model)
+	serializers.load_hdf5('sample.state',optimizer)
 
 	def evaluate(x_data, t,target=True):
 		state = make_initial_state(batchsize=len(t), train=False)
