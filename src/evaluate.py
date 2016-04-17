@@ -25,7 +25,8 @@ mod = np
 
 batchsize = 540
 n_units   = 120
-i_data = [10,11,12,26,27]
+# i_data = [10,12,22,23,26,27]
+i_data = [col for col in xrange(1,28)]
 classnum  = len(i_data) 
 
 test_data   = []

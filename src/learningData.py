@@ -18,7 +18,8 @@ import mynet_cnn
 plt.style.use('ggplot')
 mod = np
 
-i_data = [10,11,12,26,27]
+i_data = [col for col in xrange(1,28)]
+# i_data = [10,12,22,23,26,27]
 data_output = []
 data_hidden = []
 data_first  = []
@@ -122,10 +123,10 @@ if __name__ == '__main__':
     test_acc = []
 
     # Learning loop
-    for i in xrange(jump * n_epoch):        
+    for i in xrange(jump * n_epoch):   
         x_batch = np.array([train_data[(jump * j+i) % whole_len]
                         for j in six.moves.range(batchsize)]).astype(np.float32)
-        y_batch = np.array([train_target[(jump * j + i+1) % whole_len]
+        y_batch = np.array([train_arget[(jump * j + i+1) % whole_len]
                         for j in six.moves.range(batchsize)]).astype(np.int32)
 
         state, loss = model(x_batch, y_batch, state)
